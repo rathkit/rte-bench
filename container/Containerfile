@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# The benchmark image (docker.io/docker/dockerfile:1 above). The browser comes from the pinned Playwright image; the one package that
+# drives it is installed here from the lockfile only, with no install scripts. The run itself has no network (container/run.sh).
+# Rebuild from a clean checkout; the image ID goes into every results file.
+# mcr.microsoft.com/playwright:v1.64.1-noble  (the tag must equal the playwright version in package.json)
+FROM mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
+
+# pnpm: the standalone build of v12.14.0, checked against the digest GitHub lists for the release asset. Never corepack.
+ADD --checksum=sha256:3910c3852136bed5bc1511b9137a45fd4357ed6b3970d9d08893641e9005867e \
+    https://github.com/pnpm/pnpm/releases/download/v12.14.0/pnpm-linux-x64.tar.gz /tmp/pnpm.tar.gz
+RUN mkdir -p /opt/pnpm && tar -xzf /tmp/pnpm.tar.gz -C /opt/pnpm && rm /tmp/pnpm.tar.gz \
+ && ln -s "$(find /opt/pnpm -type f -name pnpm | head -1)" /usr/local/bin/pnpm && pnpm --version
+
+WORKDIR /bench
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm store prune
+COPY run.mjs compare.mjs budgets.mjs ./
+RUN chmod -R a+rX /bench
+ARG BENCH_COMMIT=unknown
+ENV BENCH_COMMIT=$BENCH_COMMIT RTE_BENCH_SANDBOX=container
+LABEL org.opencontainers.image.source="https://github.com/rathkit/rte-bench" org.opencontainers.image.revision=$BENCH_COMMIT
+USER pwuser
+ENTRYPOINT ["node", "/bench/run.mjs"]

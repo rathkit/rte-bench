@@ -1,0 +1,32 @@
+name: history-scan
+
+# Run by hand, the day before a repository is made public: the word check and the secret scan over every commit on every branch and tag
+# (messages, author names, paths and every line ever added), not only the files as they are now.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # Only Node is needed here (no install).
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4
+        with:
+          install: false
+      - name: Word check over the whole history
+        run: node tools/check-denylist.mjs --history
+        env:
+          RATHKIT_DENYLIST: ${{ secrets.RATHKIT_DENYLIST }}
+          RATHKIT_DENYLIST_COMPAT_ALLOW: ${{ secrets.RATHKIT_DENYLIST_COMPAT_ALLOW }}
+          CI: "true"
+      - name: Secret scan over the whole history
+        run: node tools/scan-secrets.mjs --history

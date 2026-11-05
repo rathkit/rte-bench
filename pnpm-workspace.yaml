@@ -1,0 +1,7 @@
+# A project of its own. No install script of any package runs (the browser comes from the pinned container image), and a package
+# published in the last three days is not taken.
+packages: []
+ignoreScripts: true
+minimumReleaseAge: 4320
+strictDepBuilds: true
+autoInstallPeers: false

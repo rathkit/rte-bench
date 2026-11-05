@@ -1,0 +1,345 @@
+{
+ "about": "A copy of the shape of the product repository's budgets.json, for the tests only (the real file is mounted at /limits). Runtime budgets, for the reference machine class in docs/MEASUREMENTS.md. stat is p95, median or value; max is in unit. CI multiplies every max by --scale. Byte budgets for the packages are in each package.json.",
+ "budgets": {
+  "p1000.load": {
+   "stat": "p95",
+   "max": 40,
+   "unit": "ms"
+  },
+  "p1000.typeMiddle": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.typeTop": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.typeEnd": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.enter": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.join": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.pasteText": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.undo": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.redo": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.undoDeep": {
+   "stat": "p95",
+   "max": 5,
+   "unit": "ms"
+  },
+  "p1000.pasteHtml": {
+   "stat": "p95",
+   "max": 15,
+   "unit": "ms"
+  },
+  "p5000.load": {
+   "stat": "p95",
+   "max": 250,
+   "unit": "ms"
+  },
+  "p5000.typeMiddle": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.typeTop": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.typeEnd": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.enter": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.join": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.pasteText": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.undo": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.redo": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.undoDeep": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "p5000.pasteHtml": {
+   "stat": "p95",
+   "max": 25,
+   "unit": "ms"
+  },
+  "p10000.load": {
+   "stat": "p95",
+   "max": 500,
+   "unit": "ms"
+  },
+  "p10000.typeMiddle": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.typeTop": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.typeEnd": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.enter": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.join": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.pasteText": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.undo": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.redo": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.undoDeep": {
+   "stat": "p95",
+   "max": 24,
+   "unit": "ms"
+  },
+  "p10000.pasteHtml": {
+   "stat": "p95",
+   "max": 35,
+   "unit": "ms"
+  },
+  "p1000@4x.load": {
+   "stat": "p95",
+   "max": 200,
+   "unit": "ms"
+  },
+  "p1000@4x.typeMiddle": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.typeTop": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.typeEnd": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.enter": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.join": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.pasteText": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.undo": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.redo": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.undoDeep": {
+   "stat": "p95",
+   "max": 30,
+   "unit": "ms"
+  },
+  "p1000@4x.pasteHtml": {
+   "stat": "p95",
+   "max": 50,
+   "unit": "ms"
+  },
+  "p5000@4x.load": {
+   "stat": "p95",
+   "max": 800,
+   "unit": "ms"
+  },
+  "p5000@4x.typeMiddle": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.typeTop": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.typeEnd": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.enter": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.join": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.pasteText": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.undo": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.redo": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.undoDeep": {
+   "stat": "p95",
+   "max": 100,
+   "unit": "ms"
+  },
+  "p5000@4x.pasteHtml": {
+   "stat": "p95",
+   "max": 150,
+   "unit": "ms"
+  },
+  "t500.load": {
+   "stat": "median",
+   "max": 50,
+   "unit": "ms"
+  },
+  "t500.type": {
+   "stat": "p95",
+   "max": 12,
+   "unit": "ms"
+  },
+  "t5000.load": {
+   "stat": "median",
+   "max": 300,
+   "unit": "ms"
+  },
+  "t5000.type": {
+   "stat": "p95",
+   "max": 16,
+   "unit": "ms"
+  },
+  "cold.ready": {
+   "stat": "median",
+   "max": 250,
+   "unit": "ms"
+  },
+  "cold.firstLoad1000": {
+   "stat": "median",
+   "max": 60,
+   "unit": "ms"
+  },
+  "cold.javascriptBytes": {
+   "stat": "value",
+   "max": 450000,
+   "unit": "bytes"
+  },
+  "mem.perUndoLevelPercent": {
+   "stat": "value",
+   "max": 1,
+   "unit": "percent"
+  },
+  "mem.document5000Bytes": {
+   "stat": "value",
+   "max": 8000000,
+   "unit": "bytes"
+  },
+  "mem.document10000Bytes": {
+   "stat": "value",
+   "max": 14000000,
+   "unit": "bytes"
+  },
+  "t500.redrawn": {
+   "stat": "value",
+   "max": 0,
+   "unit": "cells"
+  },
+  "t5000.redrawn": {
+   "stat": "value",
+   "max": 0,
+   "unit": "cells"
+  },
+  "t20000.redrawn": {
+   "stat": "value",
+   "max": 0,
+   "unit": "cells"
+  }
+ }
+}
