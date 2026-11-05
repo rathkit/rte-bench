@@ -25,6 +25,14 @@ if (workDir) mkdirSync(join(workDir, "home"), { recursive: true });
 const { chromium } = await import("playwright");
 const playwrightVersion = JSON.parse(readFileSync(new URL("./node_modules/playwright/package.json", import.meta.url), "utf8")).version;
 
+// --list-tools: what a run would use (the driver and the browser), then exit. CI uses it to check the image works with no network.
+if (flag("--list-tools")) {
+  const b = await chromium.launch(process.env.RTE_BENCH_SANDBOX === "container" ? { chromiumSandbox: false } : {});
+  console.log(`playwright ${playwrightVersion}, chromium ${b.version()}, ${chromium.executablePath()}, node ${process.version}`);
+  await b.close();
+  process.exit(0);
+}
+
 // The editor's own page server (first-party, from the mounted tree), on a free port of the loopback interface.
 let server;
 let base = args.find((a) => /^https?:/.test(a));

@@ -1,0 +1,49 @@
+name: smoke
+
+# Builds rathkit/rte at a ref and runs the reduced benchmark once in the container, to show that the recipe works. Shared runner, one run:
+# the figures are NOT publishable, and this is not a required check. Run by hand, and every Monday.
+
+on:
+  workflow_dispatch:
+    inputs:
+      rte_ref:
+        description: The ref of rathkit/rte to build and measure
+        default: main
+  schedule:
+    - cron: "23 6 * * 1"
+
+permissions: {}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rathkit/rte
+          ref: ${{ inputs.rte_ref || 'main' }}
+          path: rte
+          persist-credentials: false
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4
+        with:
+          working-directory: rte
+          cache: true
+          require-lockfile: true
+      - run: pnpm build
+        working-directory: rte
+      - run: container/run.sh run --rte rte --limits rte/tools/bench -- --quick --scale 3 --class "GitHub-hosted ubuntu-24.04 runner (smoke)"
+        env:
+          CPUSET: "0-3"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: smoke-results
+          path: results/
+          if-no-files-found: ignore
+          retention-days: 30

@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: lockfile and container
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Node, pnpm, and the install from the lockfile only (no package runs code: ignoreScripts in pnpm-workspace.yaml).
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4
+        with:
+          working-directory: .
+          cache: true
+          require-lockfile: true
+      - run: git diff --exit-code pnpm-lock.yaml
+      - run: node --check run.mjs && node --check compare.mjs && node --check budgets.mjs && node --check tools/check-results.mjs
+      - run: node --test "*.test.mjs" "tools/*.test.mjs"
+      # The image builds from the pinned digests and the lockfile, and the driver finds its browser with no network.
+      - run: docker build --build-arg BENCH_COMMIT="$GITHUB_SHA" -t rte-bench:ci -f container/Containerfile .
+      - run: docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges --shm-size 2g rte-bench:ci --list-tools
+
+  hygiene:
+    name: secrets and words
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      RATHKIT_DENYLIST: ${{ secrets.RATHKIT_DENYLIST }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4
+        with:
+          install: false
+      - run: node --test tools/scan-secrets.test.mjs
+      - run: node tools/scan-secrets.mjs
+      - run: node tools/check-denylist.mjs
+        env:
+          CI: "true"
