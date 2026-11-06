@@ -19,7 +19,7 @@ export function report(result) {
   const row = (label, fields) => `| ${label} | ${sizes.map((s) => group(r, `p${s}`, fields)).join(" | ")} |`;
   const tcols = [500, 5000, 20000];
   const mb = (b, digits) => (b / 1e6).toFixed(digits);
-  const slow = (key, f) => pair(r[`${key}@4x`][f]);
+  const slow = (key, f, rate) => pair(r[`${key}@${rate}x`][f]);
   const out = [];
   out.push(`Full run of ${result.date.slice(0, 10)} at RTE commit \`${result.rte.commit.slice(0, 7)}\` and rte-bench commit \`${result.bench.commit.slice(0, 7)}\`: ${m.class} (${m.cpu}, ${m.logicalCpus} logical CPUs in the container (cpuset ${m.cpuset}), ${m.memoryGB} GB, ${m.kernel}${m.note ? `; ${m.note}` : ""}), Node ${result.node.replace(/^v/, "")}, Chromium ${d.chromium}, Playwright ${d.playwright}, ${result.runs} runs per figure, in the pinned container (Chromium sandbox: ${result.sandbox}). Milliseconds, median / 95th percentile.`);
   out.push("");
@@ -40,8 +40,17 @@ export function report(result) {
   out.push(`| Type in one cell | ${tcols.map((c) => pair(r[`t${c}`].type)).join(" | ")} |`);
   out.push(`| Other cells redrawn | ${tcols.map((c) => r[`t${c}`].redrawn).join(" | ")} |`);
   out.push("");
-  out.push(`CPU 4x slower: typing in the middle of 1,000 / 5,000 paragraphs ${slow("p1000", "typeMiddle")} and ${slow("p5000", "typeMiddle")}; loading them ${slow("p1000", "load")} and ${slow("p5000", "load")}; typing in a cell of 500 / 5,000 cells ${slow("t500", "type")} and ${slow("t5000", "type")}.`);
+  for (const rate of [4, 6]) {
+    if (!r[`p1000@${rate}x`]) continue;
+    out.push(`CPU ${rate}x slower: typing in the middle of 1,000 / 5,000 paragraphs ${slow("p1000", "typeMiddle", rate)} and ${slow("p5000", "typeMiddle", rate)}; loading them ${slow("p1000", "load", rate)} and ${slow("p5000", "load", rate)}; typing in a cell of 500 / 5,000 cells ${slow("t500", "type", rate)} and ${slow("t5000", "type", rate)}.`);
+    out.push("");
+  }
   out.push("");
+  if (r.lowMemory) {
+    const caps = r.lowMemory.map((c) => `${c.heapCapMB} MB: ${c.largestThatFits.toLocaleString("en-US")} paragraphs`).join(", ");
+    out.push(`Low memory (the JavaScript heap capped, so the largest document that loads and takes a keystroke): ${caps}. One attempt per size, a capacity test and not a timing; the cap is on the heap, not on the whole browser.`);
+    out.push("");
+  }
   const c = r.cold;
   out.push(`Cold start: ready ${c.ready.median.toFixed(1)} ms (median of ${c.ready.n} runs from a new context), first load of 1,000 paragraphs ${c.firstLoad1000.median.toFixed(1)} ms, ${Math.round(c.javascriptBytes / 1024)} KB of JavaScript fetched (uncompressed, for the conformance page, which has the core and the browser view).`);
   out.push("");

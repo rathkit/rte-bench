@@ -1,7 +1,7 @@
 // The benchmark harness: numbers, not pass or fail. It drives the built editor in Chromium and writes what it measured, with the machine
 // and the method, to a JSON file and to the console as tables. README.md says how to read them.
 // It runs inside the container (container/run.sh), which mounts the built editor at /rte and the limits at /limits:
-//   node run.mjs --rte /rte [--limits /limits] [--results FILE] [--quick] [--scale N] [--class "name"] [--report-only]
+//   node run.mjs --rte /rte [--limits /limits] [--results FILE] [--quick] [--scale N] [--class "name"] [--report-only] [--low-memory-only]
 // With --limits it also fails when a figure is over its budget (budgets.json there; CI widens them with --scale 3, because a shared runner
 // is slower than the reference machine). Without it, it only reports.
 import { execFileSync, spawn } from "node:child_process";
@@ -48,7 +48,7 @@ if (!base) {
 
 const plan = quick
   ? { runs: 8, paragraphs: [1000, 5000, 10000], tables: [[50, 10], [100, 50]], coldRuns: 3, throttle: [1], depth: 60 }
-  : { runs: 30, paragraphs: [1000, 5000, 10000, 20000], tables: [[50, 10], [100, 50], [200, 100]], coldRuns: 10, throttle: [1, 4], depth: 200 };
+  : { runs: 30, paragraphs: [1000, 5000, 10000, 20000], tables: [[50, 10], [100, 50], [200, 100]], coldRuns: 10, throttle: [1, 4, 6], depth: 200 };
 
 // Budgets (when --limits is given): a figure over one fails the run. A quick run on a shared runner widens them with --scale.
 const budgets = limitsDir ? JSON.parse(readFileSync(join(limitsDir, "budgets.json"), "utf8")).budgets : undefined;
@@ -95,6 +95,42 @@ const meta = {
   load: { before: read("/proc/loadavg")?.split(" ").slice(0, 3).map(Number) },
 };
 const results = {};
+
+// --- low memory: the same editor in a browser whose JavaScript heap is capped (V8 --max-old-space-size), a stand-in for a device with little memory.
+// For each cap, documents of growing size are loaded and typed into until one does not fit (the page crashes or the load throws). It is a capacity
+// test, one attempt per size, not a timing series; the load and keystroke times are reported as they were, not as medians.
+const heapCaps = [128, 256];
+const lowSizes = [1000, 5000, 10000, 20000, 40000, 80000, 160000];
+async function lowMemory() {
+  const out = [];
+  for (const cap of heapCaps) {
+    const b = await chromium.launch({ ...(inContainer ? { chromiumSandbox: false } : {}), args: [`--js-flags=--max-old-space-size=${cap}`] });
+    const documents = [];
+    for (const n of lowSizes) {
+      const context = await b.newContext();
+      await context.route("**/*", (route) => (/^(http:\/\/127\.0\.0\.1|data:|blob:|about:)/.test(route.request().url()) ? route.continue() : route.abort()));
+      const page = await context.newPage();
+      let crashed = false;
+      page.on("crash", () => { crashed = true; });
+      try {
+        await page.goto(base);
+        await page.waitForFunction("window.__confReady===true");
+        const client = await context.newCDPSession(page);
+        const r = await page.evaluate(`(() => { ${helpers} const load = time(() => ed.setHtml(doc(${n}))); at(${Math.floor(n / 2)}, 3); const type = time(input("insertText", "x")); return { load, type }; })()`);
+        const heap = (await client.send("Runtime.getHeapUsage")).usedSize;
+        documents.push({ paragraphs: n, ok: true, loadMs: r.load, typeMs: r.type, heapBytes: heap });
+      } catch (e) {
+        documents.push({ paragraphs: n, ok: false, error: crashed ? "page crashed" : String(e.message).split("\n")[0].slice(0, 120) });
+      }
+      await context.close().catch(() => {});
+      if (!documents[documents.length - 1].ok) break;
+    }
+    await b.close();
+    const fits = documents.filter((d) => d.ok).at(-1)?.paragraphs ?? 0;
+    out.push({ heapCapMB: cap, largestThatFits: fits, documents });
+  }
+  return out;
+}
 
 async function fresh() {
   const context = await browser.newContext();
@@ -196,6 +232,13 @@ for (const rate of plan.throttle) {
     results[`t${rows * cols}${suffix}`] = { load: stat(r.load), type: stat(r.type), redrawn: r.redrawn };
   }
   await t.context.close();
+}
+
+// --- low memory (full runs, or alone with --low-memory-only)
+if (!quick || flag("--low-memory-only")) {
+  results.lowMemory = await lowMemory();
+  for (const c of results.lowMemory) console.log(`low memory, heap capped at ${c.heapCapMB} MB: documents up to ${c.largestThatFits.toLocaleString("en-US")} paragraphs load and take a keystroke${c.documents.at(-1).ok ? "" : `; ${c.documents.at(-1).paragraphs.toLocaleString("en-US")} did not (${c.documents.at(-1).error})`}`);
+  if (flag("--low-memory-only")) { await browser.close(); server?.kill(); if (out) writeFileSync(out, `${JSON.stringify({ ...meta, mode: "low-memory", results }, null, 2)}\n`); process.exit(0); }
 }
 
 // --- memory: the heap after a forced collection, for an empty page, for each size of document, and per undo level.
