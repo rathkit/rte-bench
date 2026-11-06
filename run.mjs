@@ -47,8 +47,8 @@ if (!base) {
 }
 
 const plan = quick
-  ? { runs: 8, paragraphs: [1000, 5000, 10000], tables: [[50, 10], [100, 50]], coldRuns: 3, throttle: [1], depth: 60 }
-  : { runs: 30, paragraphs: [1000, 5000, 10000, 20000], tables: [[50, 10], [100, 50], [200, 100]], coldRuns: 10, throttle: [1, 4, 6], depth: 200 };
+  ? { runs: 8, paragraphs: [1000, 5000, 10000], tables: [[50, 10], [100, 50]], coldRuns: 3, throttle: [1], depth: 60, markdownRuns: 3 }
+  : { runs: 30, paragraphs: [1000, 5000, 10000, 20000], tables: [[50, 10], [100, 50], [200, 100]], coldRuns: 10, throttle: [1, 4, 6], depth: 200, markdownRuns: 10 };
 
 // Budgets (when --limits is given): a figure over one fails the run. A quick run on a shared runner widens them with --scale.
 const budgets = limitsDir ? JSON.parse(readFileSync(join(limitsDir, "budgets.json"), "utf8")).budgets : undefined;
@@ -264,6 +264,35 @@ if (!quick || flag("--low-memory") || flag("--low-memory-only")) {
   results.mem = mem;
   await t.context.close();
 }
+
+// --- Markdown reading: the time to read pasted Markdown into blocks, in Node (no page), for the shapes that make a reader slow if it is not linear:
+// plain paragraphs, a list nested deeper than is read as structure, a paragraph of very many lines, many lines inside nested quotes, and a list
+// at the bottom of deep nesting. The sizes are fixed, so a figure is comparable between runs and between commits. A shape that takes more than
+// 5 s once is not repeated (the old reader took 12 s for one of them); its median is then of fewer runs, and `n` says how many.
+{
+  const { pathToFileURL } = await import("node:url");
+  const { parseMarkdown } = await import(pathToFileURL(join(rteDir, "packages/rte-core/dist/markdown/index.js")).href);
+  const shapes = {
+    paragraphs20000: () => Array.from({ length: 20000 }, (_, i) => `Paragraph **${i}** and _text_ with a [link](https://example.com/${i}).`).join("\n\n"),
+    nestedList2000: () => Array.from({ length: 2000 }, (_, i) => `${" ".repeat(i * 2)}- item`).join("\n"),
+    longParagraph200000: () => `${"a\n".repeat(200000)}===`,
+    nestedQuotes60000: () => Array.from({ length: 60000 }, () => `${"> ".repeat(30)}y`).join("\n"),
+    deepListLeaves120000: () => `${Array.from({ length: 24 }, (_, i) => `${" ".repeat(i * 2)}- l`).join("\n")}\n${Array.from({ length: 120000 }, () => `${" ".repeat(48)}- leaf`).join("\n")}`,
+  };
+  results.markdown = {};
+  for (const [name, make] of Object.entries(shapes)) {
+    const text = make();
+    const times = [];
+    for (let i = 0; i < plan.markdownRuns; i++) {
+      const started = performance.now();
+      parseMarkdown(text);
+      const took = performance.now() - started;
+      times.push(took);
+      if (took > 5000) break;
+    }
+    results.markdown[name] = stat(times);
+  }
+}
 await browser.close();
 
 // --- report
@@ -273,11 +302,12 @@ meta.runs = plan.runs;
 console.log(`machine class: ${machine.class} | ${machine.cpu}, ${machine.logicalCpus} logical CPUs${machine.cpuset ? ` (cpuset ${machine.cpuset})` : ""}, ${machine.memoryGB} GB | kernel ${machine.kernel} | Node ${meta.node} | Chromium ${meta.driver.chromium} | Playwright ${meta.driver.playwright} | rte ${meta.rte.commit ?? "unknown"} | ${meta.mode} run, ${plan.runs} runs per figure | load ${meta.load.before?.join(" ")} -> ${meta.load.after?.join(" ")}`);
 console.log(`cold start: ready ${f(results.cold.ready.median)} ms (median of ${plan.coldRuns}), first load of 1,000 paragraphs ${f(results.cold.firstLoad1000.median)} ms, ${(results.cold.javascriptBytes / 1024).toFixed(0)} KB of JavaScript`);
 for (const [name, r] of Object.entries(results)) {
-  if (name === "cold" || name === "mem" || name === "lowMemory") continue;
+  if (name === "cold" || name === "mem" || name === "lowMemory" || name === "markdown") continue;
   console.log(`\n${name}  (median / p95 ms)`);
   for (const [k, v] of Object.entries(r)) if (typeof v === "object") console.log(`  ${k.padEnd(12)} ${f(v.median).padStart(7)} / ${f(v.p95).padStart(7)}`);
   if ("redrawn" in r) console.log(`  other cells redrawn when typing: ${r.redrawn}`);
 }
+console.log(`\nMarkdown reading (median / p95 ms, in Node): ${Object.entries(results.markdown).map(([k, v]) => `${k} ${f(v.median)} / ${f(v.p95)}${v.n < plan.markdownRuns ? ` (${v.n} runs)` : ""}`).join(", ")}`);
 console.log(`\nmemory: ${Object.entries(results.mem).map(([k, v]) => `${k} ${k.endsWith("Percent") ? v.toFixed(2) : (v / 1e6).toFixed(2) + " MB"}`.replace("Bytes", "")).join(", ")}`);
 
 if (out) writeFileSync(out, `${JSON.stringify({ ...meta, results }, null, 2)}\n`);

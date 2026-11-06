@@ -34,9 +34,12 @@ test("slower CPUs and the low-memory run are reported when the result has them, 
   assert.doesNotMatch(plain, /CPU 6x slower|Low memory/);
   const more = result();
   more.results["p1000@6x"] = paragraphs(); more.results["p5000@6x"] = paragraphs(); more.results["t500@6x"] = table(); more.results["t5000@6x"] = table();
+  more.results.markdown = { paragraphs20000: s(105, 129), nestedList2000: s(431, 437), longParagraph200000: s(52.5, 53.8), nestedQuotes60000: s(207, 210), deepListLeaves120000: s(675, 718) };
   more.results.lowMemory = [{ heapCapMB: 128, largestThatFits: 40000 }, { heapCapMB: 256, largestThatFits: 80000 }];
   const text = report(more);
   assert.match(text, /CPU 6x slower: typing in the middle of 1,000 \/ 5,000 paragraphs 0\.9 \/ 2\.5 and/);
+  assert.match(text, /Markdown reading, .*20,000 paragraphs with bold, italic and links 105 \/ 129; a list nested 2,000 deep 431 \/ 437; one paragraph of 200,000 lines under a setext underline 52\.5 \/ 53\.8;/);
+  assert.doesNotMatch(plain, /Markdown reading/);
   assert.match(text, /Low memory .*: 128 MB: 40,000 paragraphs, 256 MB: 80,000 paragraphs\./);
 });
 

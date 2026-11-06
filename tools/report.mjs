@@ -51,6 +51,12 @@ export function report(result) {
     out.push(`Low memory (the JavaScript heap capped, so the largest document that loads and takes a keystroke): ${caps}. One attempt per size, a capacity test and not a timing; the cap is on the heap, not on the whole browser.`);
     out.push("");
   }
+  if (r.markdown) {
+    const m = r.markdown;
+    const shape = [["paragraphs20000", "20,000 paragraphs with bold, italic and links"], ["nestedList2000", "a list nested 2,000 deep"], ["longParagraph200000", "one paragraph of 200,000 lines under a setext underline"], ["nestedQuotes60000", "60,000 lines each inside 30 nested quotes"], ["deepListLeaves120000", "a list 24 deep with 120,000 items at the bottom"]];
+    out.push(`Markdown reading, the time to read pasted Markdown into blocks (in Node, without a page; median / 95th percentile in milliseconds): ${shape.filter(([key]) => m[key]).map(([key, label]) => `${label} ${pair(m[key])}`).join("; ")}.`);
+    out.push("");
+  }
   const c = r.cold;
   out.push(`Cold start: ready ${c.ready.median.toFixed(1)} ms (median of ${c.ready.n} runs from a new context), first load of 1,000 paragraphs ${c.firstLoad1000.median.toFixed(1)} ms, ${Math.round(c.javascriptBytes / 1024)} KB of JavaScript fetched (uncompressed, for the conformance page, which has the core and the browser view).`);
   out.push("");
