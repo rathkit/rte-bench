@@ -1,7 +1,7 @@
 // The benchmark harness: numbers, not pass or fail. It drives the built editor in Chromium and writes what it measured, with the machine
 // and the method, to a JSON file and to the console as tables. README.md says how to read them.
 // It runs inside the container (container/run.sh), which mounts the built editor at /rte and the limits at /limits:
-//   node run.mjs --rte /rte [--limits /limits] [--results FILE] [--quick] [--scale N] [--class "name"] [--report-only] [--low-memory-only]
+//   node run.mjs --rte /rte [--limits /limits] [--results FILE] [--quick] [--scale N] [--class "name"] [--report-only] [--low-memory] [--low-memory-only]
 // With --limits it also fails when a figure is over its budget (budgets.json there; CI widens them with --scale 3, because a shared runner
 // is slower than the reference machine). Without it, it only reports.
 import { execFileSync, spawn } from "node:child_process";
@@ -235,7 +235,7 @@ for (const rate of plan.throttle) {
 }
 
 // --- low memory (full runs, or alone with --low-memory-only)
-if (!quick || flag("--low-memory-only")) {
+if (!quick || flag("--low-memory") || flag("--low-memory-only")) {
   results.lowMemory = await lowMemory();
   for (const c of results.lowMemory) console.log(`low memory, heap capped at ${c.heapCapMB} MB: documents up to ${c.largestThatFits.toLocaleString("en-US")} paragraphs load and take a keystroke${c.documents.at(-1).ok ? "" : `; ${c.documents.at(-1).paragraphs.toLocaleString("en-US")} did not (${c.documents.at(-1).error})`}`);
   if (flag("--low-memory-only")) { await browser.close(); server?.kill(); if (out) writeFileSync(out, `${JSON.stringify({ ...meta, mode: "low-memory", results }, null, 2)}\n`); process.exit(0); }
@@ -273,7 +273,7 @@ meta.runs = plan.runs;
 console.log(`machine class: ${machine.class} | ${machine.cpu}, ${machine.logicalCpus} logical CPUs${machine.cpuset ? ` (cpuset ${machine.cpuset})` : ""}, ${machine.memoryGB} GB | kernel ${machine.kernel} | Node ${meta.node} | Chromium ${meta.driver.chromium} | Playwright ${meta.driver.playwright} | rte ${meta.rte.commit ?? "unknown"} | ${meta.mode} run, ${plan.runs} runs per figure | load ${meta.load.before?.join(" ")} -> ${meta.load.after?.join(" ")}`);
 console.log(`cold start: ready ${f(results.cold.ready.median)} ms (median of ${plan.coldRuns}), first load of 1,000 paragraphs ${f(results.cold.firstLoad1000.median)} ms, ${(results.cold.javascriptBytes / 1024).toFixed(0)} KB of JavaScript`);
 for (const [name, r] of Object.entries(results)) {
-  if (name === "cold" || name === "mem") continue;
+  if (name === "cold" || name === "mem" || name === "lowMemory") continue;
   console.log(`\n${name}  (median / p95 ms)`);
   for (const [k, v] of Object.entries(r)) if (typeof v === "object") console.log(`  ${k.padEnd(12)} ${f(v.median).padStart(7)} / ${f(v.p95).padStart(7)}`);
   if ("redrawn" in r) console.log(`  other cells redrawn when typing: ${r.redrawn}`);
