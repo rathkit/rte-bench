@@ -23,7 +23,7 @@ container/run.sh gate --rte ../rte --base ../rte-base --limits ../rte/tools/benc
 
 Results go to `results/` (not committed). `CPUSET` (default `2-9`), `MEMORY` (default `12g`) and `HOST_NOTE` (free text recorded with the result, for example `WSL2, Docker Desktop, laptop on AC`) set the limits and the note.
 
-To make a result that may be published, add `--publish`: it refuses a dirty tree, a dirty RTE checkout, fewer than 7 runs, and a machine whose one-minute load is 1.0 or more. Commit the file under `published/` as `YYYY-MM-DD-<rte sha>-<bench sha>.json`. A figure from CI, from a working tree or from the host is never published.
+To make a result that may be published, add `--publish`: it refuses a dirty tree, a dirty RTE checkout, fewer than 7 runs, and a machine whose one-minute load is 1.0 or more. Commit the file under `published/` as `YYYY-MM-DD-<rte sha>-<bench sha>.json`. A figure from CI, from a working tree or from the host is never published. `node tools/report.mjs FILE --into DOC.md` writes the tables for the product's docs between `<!-- rte-bench:begin -->` and `<!-- rte-bench:end -->`, so no figure is copied by hand.
 
 ## Method
 

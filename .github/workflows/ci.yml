@@ -29,7 +29,8 @@ jobs:
           cache: true
           require-lockfile: true
       - run: git diff --exit-code pnpm-lock.yaml
-      - run: node --check run.mjs && node --check compare.mjs && node --check budgets.mjs && node --check tools/check-results.mjs
+      - run: node --check run.mjs && node --check compare.mjs && node --check budgets.mjs && node --check tools/check-results.mjs && node --check tools/report.mjs
+      - run: for f in published/*.json; do [ -e "$f" ] && node tools/check-results.mjs "$f" --publishable; done; true
       - run: node --test "*.test.mjs" "tools/*.test.mjs"
       # The image builds from the pinned digests and the lockfile, and the driver finds its browser with no network.
       - run: docker build --build-arg BENCH_COMMIT="$GITHUB_SHA" -t rte-bench:ci -f container/Containerfile .
