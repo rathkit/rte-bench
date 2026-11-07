@@ -33,7 +33,8 @@ jobs:
       - uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4
         with:
           working-directory: rte
-          cache: true
+          # No cache: this job builds a ref the dispatcher chooses, and a cache it saved would be read by the default branch's other jobs.
+          cache: false
           require-lockfile: true
       - run: pnpm build
         working-directory: rte
